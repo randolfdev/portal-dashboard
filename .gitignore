@@ -39,3 +39,5 @@ supabase/.temp
 
 # scratch / tool output
 _*.txt
+
+.vercel
