@@ -1,8 +1,0 @@
-Installing 'gh' (2.89.0) [64bit] from 'main' bucket
-Downloading https://github.com/cli/cli/releases/download/v2.89.0/gh_2.89.0_windows_amd64.zip (13,8 MB)...
-Checking hash of gh_2.89.0_windows_amd64.zip ... ok.
-Extracting gh_2.89.0_windows_amd64.zip ... done.
-Linking ~\scoop\apps\gh\current => ~\scoop\apps\gh\2.89.0
-Creating shim for 'gh'.
-'gh' (2.89.0) was installed successfully!
-exit=0

@@ -36,3 +36,6 @@ logs/
 # supabase
 supabase/.branches
 supabase/.temp
+
+# scratch / tool output
+_*.txt

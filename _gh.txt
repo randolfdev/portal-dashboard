@@ -1,1 +1,0 @@
-bash: gh: command not found
