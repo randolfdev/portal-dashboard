@@ -1,0 +1,9 @@
+gh version 2.89.0 (2026-03-26)
+https://github.com/cli/cli/releases/tag/v2.89.0
+github.com
+  ✓ Logged in to github.com account randolfdev (keyring)
+  - Active account: true
+  - Git operations protocol: https
+  - Token: gho_************************************
+  - Token scopes: 'gist', 'read:org', 'repo', 'workflow'
+bash: where: command not found

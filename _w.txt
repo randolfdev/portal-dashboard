@@ -1,0 +1,1 @@
+bash: winget: command not found

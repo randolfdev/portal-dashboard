@@ -1,0 +1,2 @@
+bash: git: command not found
+git version 2.53.0.windows.2
