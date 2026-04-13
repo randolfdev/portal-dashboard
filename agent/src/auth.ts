@@ -32,12 +32,13 @@ export async function authenticate(): Promise<string> {
     throw new Error(`Authentication failed (HTTP ${res.status}): ${body}`);
   }
 
-  const data = (await res.json()) as { tenant_id: string };
-  if (!data.tenant_id) {
+  const data = (await res.json()) as { tenant_id?: string; tenantId?: string };
+  const tid = data.tenant_id || data.tenantId;
+  if (!tid) {
     throw new Error('Authentication response missing tenant_id');
   }
 
-  cachedTenantId = data.tenant_id;
+  cachedTenantId = tid;
   logger.info('Authenticated successfully', { tenantId: cachedTenantId });
   return cachedTenantId;
 }
