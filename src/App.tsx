@@ -18,20 +18,110 @@ import IndicatorBuilder from './pages/tenant/IndicatorBuilder'
 import AgentStatusPage from './pages/tenant/AgentStatusPage'
 import SettingsPage from './pages/tenant/SettingsPage'
 
+function TenantRoutes({ slug, basePath }: { slug: string; basePath: string }) {
+  return (
+    <Routes>
+      <Route path="login" element={<TenantLogin slug={slug} />} />
+      <Route
+        path="*"
+        element={
+          <ProtectedRoute loginPath={`${basePath}/login`}>
+            <TenantProvider slug={slug}>
+              <TenantLayout>
+                <Routes>
+                  <Route path="/" element={<DashboardList />} />
+                  <Route path="/dashboards/:dashboardSlug" element={<DashboardView />} />
+                  <Route
+                    path="/connectors"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <ConnectorsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/connectors/new"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <ConnectorForm />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/connectors/:id/edit"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <ConnectorForm />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/indicators"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <IndicatorsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/indicators/new"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <IndicatorBuilder />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/agent-status"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <AgentStatusPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/users"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <UsersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <SettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="*" element={<Navigate to={basePath} replace />} />
+                </Routes>
+              </TenantLayout>
+            </TenantProvider>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  )
+}
+
 export default function App() {
   const tenant = useTenant()
 
   if (tenant.kind === 'admin') {
     return (
       <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/login" element={<AdminLogin />} />
         <Route
           path="/*"
           element={
-            <ProtectedRoute requiredRole="platform_admin">
+            <ProtectedRoute requiredRole="platform_admin" loginPath="/admin/login">
               <AdminLayout>
                 <Routes>
                   <Route path="/" element={<AdminDashboard />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AdminLayout>
@@ -43,97 +133,21 @@ export default function App() {
   }
 
   if (tenant.kind === 'tenant') {
-    return (
-      <Routes>
-        <Route path="/login" element={<TenantLogin slug={tenant.slug} />} />
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <TenantProvider slug={tenant.slug}>
-                <TenantLayout>
-                  <Routes>
-                    <Route path="/" element={<DashboardList />} />
-                    <Route path="/dashboards/:dashboardSlug" element={<DashboardView />} />
-                    <Route
-                      path="/connectors"
-                      element={
-                        <ProtectedRoute requiredRole="tenant_admin">
-                          <ConnectorsPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/connectors/new"
-                      element={
-                        <ProtectedRoute requiredRole="tenant_admin">
-                          <ConnectorForm />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/connectors/:id/edit"
-                      element={
-                        <ProtectedRoute requiredRole="tenant_admin">
-                          <ConnectorForm />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/indicators"
-                      element={
-                        <ProtectedRoute requiredRole="tenant_admin">
-                          <IndicatorsPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/indicators/new"
-                      element={
-                        <ProtectedRoute requiredRole="tenant_admin">
-                          <IndicatorBuilder />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/agent-status"
-                      element={
-                        <ProtectedRoute requiredRole="tenant_admin">
-                          <AgentStatusPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/users"
-                      element={
-                        <ProtectedRoute requiredRole="tenant_admin">
-                          <UsersPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings"
-                      element={
-                        <ProtectedRoute requiredRole="tenant_admin">
-                          <SettingsPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </TenantLayout>
-              </TenantProvider>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    )
+    // Subdomain-based tenant (dev / custom domain)
+    return <TenantRoutes slug={tenant.slug} basePath="" />
   }
 
+  // Root: path-based routing
   return (
     <Routes>
+      <Route path="/t/:slug/*" element={<PathTenantRouter />} />
       <Route path="/" element={<Landing />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
+}
+
+function PathTenantRouter() {
+  const slug = window.location.pathname.match(/^\/t\/([^/]+)/)?.[1] ?? ''
+  return <TenantRoutes slug={slug} basePath={`/t/${slug}`} />
 }

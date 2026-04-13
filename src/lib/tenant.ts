@@ -3,7 +3,13 @@ export type TenantContext =
   | { kind: 'tenant'; slug: string }
   | { kind: 'root' }
 
-export function resolveTenant(hostname: string): TenantContext {
+export function resolveTenant(hostname: string, pathname: string): TenantContext {
+  // Path-based routing: /t/<slug>/... or /admin/...
+  if (pathname.startsWith('/admin')) return { kind: 'admin' }
+  const pathMatch = pathname.match(/^\/t\/([^/]+)/)
+  if (pathMatch) return { kind: 'tenant', slug: pathMatch[1] }
+
+  // Subdomain-based routing (dev / custom domain)
   const bare = hostname.toLowerCase().split(':')[0]
   const parts = bare.split('.')
 
@@ -30,5 +36,5 @@ export function resolveTenant(hostname: string): TenantContext {
 }
 
 export function useTenant(): TenantContext {
-  return resolveTenant(window.location.hostname)
+  return resolveTenant(window.location.hostname, window.location.pathname)
 }

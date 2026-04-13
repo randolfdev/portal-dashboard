@@ -7,18 +7,25 @@ type Props = {
   onClose: () => void
 }
 
-const navItems = [
-  { to: '/', label: 'Dashboards', icon: GridIcon, roles: ['member', 'tenant_admin', 'platform_admin'] },
-  { to: '/connectors', label: 'Conectores', icon: DatabaseIcon, roles: ['tenant_admin', 'platform_admin'] },
-  { to: '/indicators', label: 'Indicadores', icon: ChartIcon, roles: ['tenant_admin', 'platform_admin'] },
-  { to: '/agent-status', label: 'Agent', icon: ServerIcon, roles: ['tenant_admin', 'platform_admin'] },
-  { to: '/users', label: 'Usuarios', icon: UsersIcon, roles: ['tenant_admin', 'platform_admin'] },
-  { to: '/settings', label: 'Configuracoes', icon: GearIcon, roles: ['tenant_admin', 'platform_admin'] },
+function useBasePath() {
+  const match = window.location.pathname.match(/^\/t\/[^/]+/)
+  return match ? match[0] : ''
+}
+
+const navSuffix = [
+  { suffix: '', label: 'Dashboards', icon: GridIcon, roles: ['member', 'tenant_admin', 'platform_admin'] },
+  { suffix: '/connectors', label: 'Conectores', icon: DatabaseIcon, roles: ['tenant_admin', 'platform_admin'] },
+  { suffix: '/indicators', label: 'Indicadores', icon: ChartIcon, roles: ['tenant_admin', 'platform_admin'] },
+  { suffix: '/agent-status', label: 'Agent', icon: ServerIcon, roles: ['tenant_admin', 'platform_admin'] },
+  { suffix: '/users', label: 'Usuarios', icon: UsersIcon, roles: ['tenant_admin', 'platform_admin'] },
+  { suffix: '/settings', label: 'Configuracoes', icon: GearIcon, roles: ['tenant_admin', 'platform_admin'] },
 ]
 
 export default function Sidebar({ open, onClose }: Props) {
   const { role, user, signOut } = useAuth()
   const tenant = useTenantData()
+  const basePath = useBasePath()
+  const navItems = navSuffix.map((item) => ({ ...item, to: basePath + item.suffix || '/' }))
 
   return (
     <>

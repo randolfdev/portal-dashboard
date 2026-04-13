@@ -64,7 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    const pathMatch = window.location.pathname.match(/^\/t\/[^/]+/)
+    window.location.href = pathMatch ? `${pathMatch[0]}/login` : '/login'
   }
 
   return (

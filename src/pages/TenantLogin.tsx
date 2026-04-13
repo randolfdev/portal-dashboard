@@ -20,7 +20,9 @@ export default function TenantLogin({ slug }: { slug: string }) {
           setLoading(false)
         } else {
           console.log('[login] success, redirecting...')
-          window.location.href = '/'
+          // Redirect to tenant root (works for both path-based and subdomain)
+          const pathMatch = window.location.pathname.match(/^\/t\/[^/]+/)
+          window.location.href = pathMatch ? pathMatch[0] : '/'
         }
       },
       (err) => {
