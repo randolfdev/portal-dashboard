@@ -112,7 +112,7 @@ function PercentTooltip({ active, payload, label, colors = [] }: {
 }) {
   if (!active || !payload?.length) return null
   const entry = payload[0]
-  const pct = entry.payload._percentual
+  const pct = entry.payload._percentual as number | undefined
   const name = label || entry.payload.name || entry.name || entry.payload.ds_convenio
   const color = colors[0] || 'var(--color-primary)'
   return (

@@ -65,7 +65,7 @@ export default function AgentStatusPage() {
         .limit(50),
     ]).then(([keysRes, jobsRes]) => {
       setKeys((keysRes.data as AgentKey[]) ?? [])
-      setJobs((jobsRes.data as Job[]) ?? [])
+      setJobs((jobsRes.data as unknown as Job[]) ?? [])
       setLoading(false)
     })
   }, [tenant.id])

@@ -38,7 +38,7 @@ export default function IndicatorsPage() {
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
-        setIndicators((data as Indicator[]) ?? [])
+        setIndicators((data as unknown as Indicator[]) ?? [])
         setLoading(false)
       })
   }, [tenant.id])

@@ -48,7 +48,7 @@ export function generatePalette(count: number): string[] {
   const primary = getThemeColor('--color-primary', '#2563eb')
   const secondary = getThemeColor('--color-secondary', '#7c3aed')
 
-  const [secH, secS, secL] = hexToHsl(secondary)
+  const [secH, secS] = hexToHsl(secondary)
 
   const colors: string[] = []
 
