@@ -1,5 +1,4 @@
 import { useState, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 export default function AdminLogin() {
@@ -7,16 +6,23 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if (error) return setError(error.message)
-    navigate('/')
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      if (authError) {
+        setError(authError.message)
+        setLoading(false)
+        return
+      }
+      window.location.href = '/'
+    } catch (err) {
+      setError(String(err))
+      setLoading(false)
+    }
   }
 
   return (
@@ -53,7 +59,7 @@ export default function AdminLogin() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium hover:bg-indigo-500 disabled:opacity-50"
+          className="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium hover:bg-indigo-500 disabled:opacity-50 transition-colors"
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
