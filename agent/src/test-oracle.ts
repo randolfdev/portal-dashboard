@@ -1,9 +1,18 @@
 import oracledb from 'oracledb';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 async function test() {
-  const user = 'tasy';
-  const password = 'U#DZ#5USHmGE';
-  const connectString = '(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=168.138.146.45)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=dbauora.sub06042025400.auoravcn.oraclevcn.com)))';
+  const user = process.env.ORACLE_USERNAME || 'tasy';
+  const password = process.env.ORACLE_PASSWORD || '';
+  const connectString = process.env.ORACLE_CONNECT_STRING || `(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=${process.env.ORACLE_HOST || 'localhost'})(PORT=${process.env.ORACLE_PORT || '1521'}))(CONNECT_DATA=(SERVICE_NAME=${process.env.ORACLE_DATABASE || 'orcl'})))`;
+
+  if (!password) {
+    console.error('Set ORACLE_PASSWORD in agent/.env');
+    process.exit(1);
+  }
 
   console.log('Testing Oracle connection...');
   console.log('User:', user);

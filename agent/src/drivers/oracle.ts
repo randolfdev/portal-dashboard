@@ -1,9 +1,9 @@
-import oracledb from 'oracledb';
+import oracledb, { Connection, BindParameters } from 'oracledb';
 import { DbDriver, ConnectorConfig, ColumnMeta, SchemaInfo } from './base';
 import { logger } from '../logger';
 
 export class OracleDriver implements DbDriver {
-  private connection: oracledb.Connection | null = null;
+  private connection: Connection | null = null;
   private schema: string = '';
 
   async connect(cfg: ConnectorConfig): Promise<void> {
@@ -44,12 +44,12 @@ export class OracleDriver implements DbDriver {
 
     logger.debug('Executing query', { sql, paramCount: params.length });
 
-    const result = await this.connection.execute(sql, params as oracledb.BindParameters, {
+    const result = await this.connection.execute(sql, params as BindParameters, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
       maxRows: 50_000,
     });
 
-    const columns: ColumnMeta[] = (result.metaData ?? []).map((col) => ({
+    const columns: ColumnMeta[] = (result.metaData ?? []).map((col: any) => ({
       name: col.name,
       type: mapOracleDbType(col.dbType),
     }));

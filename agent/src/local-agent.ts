@@ -7,7 +7,7 @@
  * Uso: npx ts-node src/local-agent.ts
  */
 
-import oracledb from 'oracledb';
+import oracledb, { BindParameters } from 'oracledb';
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -202,7 +202,7 @@ async function executeOnOracle(
     console.log(`  [oracle] SQL: ${sql}`);
     console.log(`  [oracle] Params: ${JSON.stringify(params)}`);
 
-    const result = await connection.execute(sql, params as oracledb.BindParameters, {
+    const result = await connection.execute(sql, params as BindParameters, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
       maxRows: 50_000,
     });
