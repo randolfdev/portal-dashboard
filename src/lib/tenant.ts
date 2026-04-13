@@ -24,7 +24,13 @@ export function resolveTenant(hostname: string, pathname: string): TenantContext
     return { kind: 'tenant', slug: sub }
   }
 
-  // prod: <slug>.<domain>.<tld>
+  // Hosting platforms where the full hostname is the app name, not a tenant subdomain
+  const platformDomains = ['vercel.app', 'netlify.app', 'pages.dev', 'onrender.com']
+  if (platformDomains.some((d) => bare.endsWith(d))) {
+    return { kind: 'root' }
+  }
+
+  // prod with custom domain: <slug>.<domain>.<tld>
   if (parts.length >= 3) {
     const sub = parts[0]
     if (sub === 'admin') return { kind: 'admin' }
