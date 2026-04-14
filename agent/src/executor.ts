@@ -37,10 +37,19 @@ export async function executeJob(job: Job): Promise<void> {
 
     logger.debug('Compiled SQL', { jobId: job.id, sql, paramCount: params.length });
 
-    // Decrypt the connector password
+    // Decrypt the connector password (fall back to env override or plaintext)
+    let password: string;
+    try {
+      password = decryptPassword(job.connector_config.password);
+    } catch {
+      // If decryption fails, use ORACLE_PASSWORD env var or the raw value
+      password = process.env.ORACLE_PASSWORD || job.connector_config.password;
+      logger.warn('Password decryption failed, using fallback', { jobId: job.id });
+    }
+
     const cfg: ConnectorConfig = {
       ...job.connector_config,
-      password: decryptPassword(job.connector_config.password),
+      password,
     };
 
     // Connect, execute, disconnect
@@ -105,7 +114,11 @@ export async function executeJobs(jobs: Job[]): Promise<void> {
  */
 async function postResult(result: JobResult): Promise<void> {
   try {
-    const response = await gatewayRequest('complete-job', result);
+    const action = result.status === 'failed' ? 'fail-job' : 'complete-job';
+    const body = result.status === 'failed'
+      ? { jobId: result.job_id, errorMessage: result.error }
+      : { jobId: result.job_id, data: result.rows, metadata: { rowCount: result.row_count, columns: result.columns } };
+    const response = await gatewayRequest(action, body);
     if (!response.ok) {
       logger.error('Failed to post job result', {
         jobId: result.job_id,

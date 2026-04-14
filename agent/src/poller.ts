@@ -33,13 +33,33 @@ export async function pollJobs(): Promise<Job[]> {
     return [];
   }
 
-  const jobs = response.data.jobs ?? [];
-  if (jobs.length > 0) {
-    logger.info('Received jobs', { count: jobs.length, jobIds: jobs.map((j) => j.id) });
-  } else {
+  const rawJobs = response.data.jobs ?? [];
+  if (rawJobs.length === 0) {
     logger.debug('No pending jobs');
+    return [];
   }
 
+  // Map gateway response (Supabase join format) to agent Job format
+  const jobs: Job[] = rawJobs.map((raw: any) => {
+    const connector = raw.connectors ?? {};
+    return {
+      id: raw.id,
+      connector_id: raw.connector_id,
+      db_type: connector.db_type ?? 'oracle',
+      connector_config: {
+        host: process.env.ORACLE_HOST || connector.host || '',
+        port: parseInt(process.env.ORACLE_PORT || String(connector.port || 1521), 10),
+        database: process.env.ORACLE_DATABASE || connector.database_name || '',
+        username: process.env.ORACLE_USERNAME || connector.username || '',
+        password: connector.encrypted_password || '',
+        extra: connector.extra_config || {},
+      },
+      query_ast: raw.query_ast,
+      created_at: raw.created_at,
+    };
+  });
+
+  logger.info('Received jobs', { count: jobs.length, jobIds: jobs.map((j) => j.id) });
   return jobs;
 }
 

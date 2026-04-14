@@ -8,7 +8,8 @@ export class OracleDriver implements DbDriver {
 
   async connect(cfg: ConnectorConfig): Promise<void> {
     const connectString =
-      (cfg.extra.connectString as string) || `${cfg.host}:${cfg.port}/${cfg.database}`;
+      (cfg.extra.connectString as string) ||
+      `(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=${cfg.host})(PORT=${cfg.port}))(CONNECT_DATA=(SERVICE_NAME=${cfg.database})))`;
 
     logger.info('Connecting to Oracle', { connectString, user: cfg.username });
 
