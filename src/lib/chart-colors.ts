@@ -46,27 +46,21 @@ function getThemeColor(varName: string, fallback: string): string {
 
 export function generatePalette(count: number): string[] {
   const primary = getThemeColor('--color-primary', '#2563eb')
-  const secondary = getThemeColor('--color-secondary', '#7c3aed')
+  const [h, s] = hexToHsl(primary)
 
-  const [secH, secS] = hexToHsl(secondary)
+  if (count <= 1) return [primary]
 
-  const colors: string[] = []
-
-  // Primeiro item: cor primária (destaque principal)
-  colors.push(primary)
-
-  // Demais itens: variações da cor secundária
-  // Alterna luminosidade e saturação para criar distinção visual
-  const steps = Math.max(count - 1, 1)
+  // Paleta monocromática: todos derivados da primária, variando luminosidade
+  // para dar distinção sem fugir da identidade do tenant.
+  const colors: string[] = [primary]
+  const steps = count - 1
   for (let i = 0; i < steps; i++) {
-    const t = i / steps
-    // Varia luminosidade entre 0.35 e 0.70
-    const l = 0.35 + t * 0.35
-    // Varia saturação levemente
-    const s = Math.max(0.3, secS + (i % 2 === 0 ? -0.1 : 0.1))
-    // Pequeno deslocamento no hue para cada item
-    const h = (secH + i * 18) % 360
-    colors.push(hslToHex(h, s, l))
+    const t = (i + 1) / (steps + 1)
+    // Luminosidade entre 0.30 (escuro) e 0.80 (claro)
+    const l = 0.30 + t * 0.50
+    // Mantém saturação, mas reduz levemente nos tons mais claros
+    const sat = Math.max(0.25, s * (1 - t * 0.3))
+    colors.push(hslToHex(h, sat, l))
   }
 
   return colors.slice(0, count)

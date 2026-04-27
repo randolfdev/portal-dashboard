@@ -1,6 +1,6 @@
 -- Seed: ambiente de dev local
 -- Rodar: npx supabase db reset
--- Usuario: criar via scripts/setup-dev-user.ps1
+-- Usuario dev ja incluido abaixo (email/senha no bloco 2)
 
 -- ============================================================
 -- 1. TENANT
@@ -8,14 +8,86 @@
 insert into public.tenants (id, slug, name, theme)
 values (
   'a0000000-0000-0000-0000-000000000001',
-  'acme',
-  'ACME Hospital',
+  'renal-vida',
+  'Renal Vida',
   '{"primaryColor": "#6366f1"}'::jsonb
 )
-on conflict (slug) do nothing;
+on conflict (id) do update
+  set slug = excluded.slug,
+      name = excluded.name,
+      theme = excluded.theme;
 
 -- ============================================================
--- 2. CONECTOR Oracle (dados de conexao do hospital)
+-- 2. USUARIO DEV (auth.users + auth.identities + profile)
+--    UID fixo para ser idempotente entre resets
+--    Login: randolfgrassmannfilho@gmail.com / adm12345
+-- ============================================================
+do $$
+declare
+  v_user_id uuid := '2fe0255c-8bbf-4199-aa72-223ca8cf342c';
+  v_email   text := 'randolfgrassmannfilho@gmail.com';
+  v_pass    text := 'adm12345';
+  v_name    text := 'Randolf Grassmann';
+  v_tenant  uuid := 'a0000000-0000-0000-0000-000000000001';
+begin
+  if not exists (select 1 from auth.users where id = v_user_id) then
+    insert into auth.users (
+      instance_id, id, aud, role, email, encrypted_password,
+      email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at, confirmation_token, email_change,
+      email_change_token_new, recovery_token
+    ) values (
+      '00000000-0000-0000-0000-000000000000',
+      v_user_id, 'authenticated', 'authenticated',
+      v_email, crypt(v_pass, gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      jsonb_build_object('full_name', v_name),
+      now(), now(), '', '', '', ''
+    );
+
+    insert into auth.identities (
+      id, user_id, provider_id, identity_data, provider,
+      last_sign_in_at, created_at, updated_at
+    ) values (
+      gen_random_uuid(), v_user_id, v_user_id::text,
+      jsonb_build_object(
+        'sub', v_user_id::text,
+        'email', v_email,
+        'email_verified', true
+      ),
+      'email', now(), now(), now()
+    );
+  end if;
+
+  -- O trigger handle_new_user ja criou o profile; aqui vinculamos ao tenant
+  update public.profiles
+     set tenant_id = v_tenant,
+         role      = 'tenant_admin',
+         full_name = v_name,
+         email     = v_email
+   where id = v_user_id;
+end $$;
+
+-- ============================================================
+-- 2b. AGENT KEY (dev): token "dev-local-key"
+--    SHA-256 de "dev-local-key" =
+--    3700285e3c8496a57e45eb1ccd43f2424852788576961320fbb31f86f17edb61
+-- ============================================================
+insert into public.agent_keys (id, tenant_id, key_hash, label, is_active)
+values (
+  'b0000000-0000-0000-0000-000000000001',
+  'a0000000-0000-0000-0000-000000000001',
+  '3700285e3c8496a57e45eb1ccd43f2424852788576961320fbb31f86f17edb61',
+  'dev-local',
+  true
+)
+on conflict (id) do update
+  set key_hash  = excluded.key_hash,
+      is_active = true;
+
+-- ============================================================
+-- 3. CONECTOR Oracle (dados de conexao do hospital)
 -- ============================================================
 insert into public.connectors (id, tenant_id, name, db_type, host, port, database_name, username, encrypted_password, is_active)
 values (
@@ -33,7 +105,7 @@ values (
 on conflict (id) do nothing;
 
 -- ============================================================
--- 3. INDICADOR: Atendimentos por Convenio
+-- 4. INDICADOR: Atendimentos por Convenio
 -- ============================================================
 insert into public.indicators (
   id, tenant_id, connector_id, name, description, query_ast, sql_preview, schedule, is_template
@@ -66,7 +138,7 @@ values (
 on conflict (id) do nothing;
 
 -- ============================================================
--- 4. DASHBOARD: Atendimentos por Convenio
+-- 5. DASHBOARD: Atendimentos por Convenio
 -- ============================================================
 insert into public.dashboards (id, tenant_id, title, slug, description, is_default, layout)
 values (
@@ -88,7 +160,7 @@ values (
 on conflict (tenant_id, slug) do nothing;
 
 -- ============================================================
--- 5. WIDGETS do dashboard
+-- 6. WIDGETS do dashboard
 -- ============================================================
 
 -- Widget 1: Card com total de atendimentos

@@ -18,6 +18,19 @@ export default function ChartWidget({ kind, title, config }: Props) {
   const showPercent = config.showPercent as boolean
   const colors = useMemo(() => generatePalette(Math.max(data.length, 6)), [data.length])
 
+  // Ranking por valor desc: o maior volume recebe colors[0] (primária),
+  // segundo maior recebe colors[1] e assim por diante. Evita que a primária
+  // vá para a fatia menor só porque apareceu primeiro na ordenação do SQL.
+  const colorForIndex = useMemo(() => {
+    const valueKey = (config.valueKey ?? config.yKey) as string | undefined
+    if (!valueKey) return (i: number) => colors[i % colors.length]
+    const indices = data.map((_, i) => i)
+    indices.sort((a, b) => Number(data[b][valueKey] ?? 0) - Number(data[a][valueKey] ?? 0))
+    const rank = new Map<number, number>()
+    indices.forEach((originalIdx, rankPos) => rank.set(originalIdx, rankPos))
+    return (i: number) => colors[(rank.get(i) ?? i) % colors.length]
+  }, [data, colors, config.valueKey, config.yKey])
+
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 h-full flex flex-col">
       <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
@@ -41,7 +54,7 @@ export default function ChartWidget({ kind, title, config }: Props) {
               <Tooltip content={showPercent ? <PercentTooltip colors={colors} /> : undefined} />
               <Bar dataKey={config.yKey as string} radius={[6, 6, 0, 0]}>
                 {data.map((_, i) => (
-                  <Cell key={i} fill={colors[i % colors.length]} />
+                  <Cell key={i} fill={colorForIndex(i)} />
                 ))}
               </Bar>
             </BarChart>
@@ -87,7 +100,7 @@ export default function ChartWidget({ kind, title, config }: Props) {
                 labelLine={showPercent ? { strokeWidth: 1, stroke: '#94a3b8' } : undefined}
               >
                 {data.map((_, i) => (
-                  <Cell key={i} fill={colors[i % colors.length]} />
+                  <Cell key={i} fill={colorForIndex(i)} />
                 ))}
               </Pie>
               <Tooltip content={<PercentTooltip colors={colors} />} />

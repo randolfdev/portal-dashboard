@@ -51,11 +51,16 @@ export class OracleDriver implements DbDriver {
     });
 
     const columns: ColumnMeta[] = (result.metaData ?? []).map((col: any) => ({
-      name: col.name,
+      name: col.name.toLowerCase(),
       type: mapOracleDbType(col.dbType),
     }));
 
-    const rows = (result.rows ?? []) as Record<string, unknown>[];
+    const rawRows = (result.rows ?? []) as Record<string, unknown>[];
+    const rows = rawRows.map((row) => {
+      const normalized: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(row)) normalized[k.toLowerCase()] = v;
+      return normalized;
+    });
 
     logger.debug('Query returned', { rowCount: rows.length, columnCount: columns.length });
 
@@ -145,24 +150,24 @@ function mapOracleDbType(dbType: number | undefined): string {
   if (dbType === undefined) return 'UNKNOWN';
 
   const typeMap: Record<number, string> = {
-    [oracledb.DB_TYPE_VARCHAR]: 'VARCHAR2',
-    [oracledb.DB_TYPE_NVARCHAR]: 'NVARCHAR2',
-    [oracledb.DB_TYPE_CHAR]: 'CHAR',
-    [oracledb.DB_TYPE_NCHAR]: 'NCHAR',
-    [oracledb.DB_TYPE_NUMBER]: 'NUMBER',
-    [oracledb.DB_TYPE_BINARY_FLOAT]: 'BINARY_FLOAT',
-    [oracledb.DB_TYPE_BINARY_DOUBLE]: 'BINARY_DOUBLE',
-    [oracledb.DB_TYPE_DATE]: 'DATE',
-    [oracledb.DB_TYPE_TIMESTAMP]: 'TIMESTAMP',
-    [oracledb.DB_TYPE_TIMESTAMP_TZ]: 'TIMESTAMP WITH TIME ZONE',
-    [oracledb.DB_TYPE_TIMESTAMP_LTZ]: 'TIMESTAMP WITH LOCAL TIME ZONE',
-    [oracledb.DB_TYPE_CLOB]: 'CLOB',
-    [oracledb.DB_TYPE_NCLOB]: 'NCLOB',
-    [oracledb.DB_TYPE_BLOB]: 'BLOB',
-    [oracledb.DB_TYPE_RAW]: 'RAW',
-    [oracledb.DB_TYPE_LONG]: 'LONG',
-    [oracledb.DB_TYPE_LONG_RAW]: 'LONG RAW',
-    [oracledb.DB_TYPE_ROWID]: 'ROWID',
+    [oracledb.DB_TYPE_VARCHAR.num]: 'VARCHAR2',
+    [oracledb.DB_TYPE_NVARCHAR.num]: 'NVARCHAR2',
+    [oracledb.DB_TYPE_CHAR.num]: 'CHAR',
+    [oracledb.DB_TYPE_NCHAR.num]: 'NCHAR',
+    [oracledb.DB_TYPE_NUMBER.num]: 'NUMBER',
+    [oracledb.DB_TYPE_BINARY_FLOAT.num]: 'BINARY_FLOAT',
+    [oracledb.DB_TYPE_BINARY_DOUBLE.num]: 'BINARY_DOUBLE',
+    [oracledb.DB_TYPE_DATE.num]: 'DATE',
+    [oracledb.DB_TYPE_TIMESTAMP.num]: 'TIMESTAMP',
+    [oracledb.DB_TYPE_TIMESTAMP_TZ.num]: 'TIMESTAMP WITH TIME ZONE',
+    [oracledb.DB_TYPE_TIMESTAMP_LTZ.num]: 'TIMESTAMP WITH LOCAL TIME ZONE',
+    [oracledb.DB_TYPE_CLOB.num]: 'CLOB',
+    [oracledb.DB_TYPE_NCLOB.num]: 'NCLOB',
+    [oracledb.DB_TYPE_BLOB.num]: 'BLOB',
+    [oracledb.DB_TYPE_RAW.num]: 'RAW',
+    [oracledb.DB_TYPE_LONG.num]: 'LONG',
+    [oracledb.DB_TYPE_LONG_RAW.num]: 'LONG RAW',
+    [oracledb.DB_TYPE_ROWID.num]: 'ROWID',
   };
 
   return typeMap[dbType] ?? `ORACLE_TYPE_${dbType}`;
