@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTenantBasePath } from '../../lib/use-tenant-base-path'
 import { supabase } from '../../lib/supabase'
 import { useTenantData } from '../../contexts/TenantContext'
 import Button from '../../components/ui/Button'
@@ -24,6 +25,7 @@ export default function ConnectorForm() {
   const isEdit = !!id
   const navigate = useNavigate()
   const tenant = useTenantData()
+  const basePath = useTenantBasePath()
 
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
@@ -113,7 +115,7 @@ export default function ConnectorForm() {
       if (err) { setError(err.message); setSaving(false); return }
     }
 
-    navigate('/connectors')
+    navigate(`${basePath}/connectors`)
   }
 
   if (loading) return <LoadingSpinner />
@@ -121,7 +123,7 @@ export default function ConnectorForm() {
   return (
     <div className="max-w-2xl space-y-4">
       <div>
-        <button onClick={() => navigate('/connectors')} className="text-xs text-slate-400 hover:text-primary">
+        <button onClick={() => navigate(`${basePath}/connectors`)} className="text-xs text-slate-400 hover:text-primary">
           ← Conectores
         </button>
         <h2 className="text-lg font-semibold text-slate-800">
@@ -230,7 +232,7 @@ export default function ConnectorForm() {
           <Button type="submit" disabled={saving}>
             {saving ? 'Salvando...' : isEdit ? 'Salvar' : 'Criar conector'}
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/connectors')}>
+          <Button type="button" variant="outline" onClick={() => navigate(`${basePath}/connectors`)}>
             Cancelar
           </Button>
         </div>

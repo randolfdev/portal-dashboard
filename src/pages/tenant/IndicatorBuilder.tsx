@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTenantBasePath } from '../../lib/use-tenant-base-path'
 import { supabase } from '../../lib/supabase'
 import { useTenantData } from '../../contexts/TenantContext'
 import { useAuth } from '../../contexts/AuthContext'
@@ -19,6 +20,7 @@ export default function IndicatorBuilder() {
   const tenant = useTenantData()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const basePath = useTenantBasePath()
 
   const [connectors, setConnectors] = useState<Connector[]>([])
   const [connectorId, setConnectorId] = useState<string | null>(null)
@@ -125,14 +127,14 @@ export default function IndicatorBuilder() {
       schedule,
       created_by: user?.id,
     })
-    navigate('/indicators')
+    navigate(`${basePath}/indicators`)
   }
 
   return (
     <div className="h-full flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <button onClick={() => navigate('/indicators')} className="text-xs text-slate-400 hover:text-primary">
+          <button onClick={() => navigate(`${basePath}/indicators`)} className="text-xs text-slate-400 hover:text-primary">
             ← Indicadores
           </button>
           <h2 className="text-lg font-semibold text-slate-800">Novo Indicador</h2>

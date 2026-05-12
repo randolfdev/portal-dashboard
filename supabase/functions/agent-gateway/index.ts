@@ -29,11 +29,16 @@ Deno.serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-    // --- Authentication via Bearer token (agent API key) ---
+    // --- Authentication via X-Agent-Key (preferred) or Bearer fallback ---
+    // The Supabase edge runtime always parses the Authorization header as JWT,
+    // so the agent sends its raw API key in X-Agent-Key and uses the anon key
+    // in Authorization to satisfy the runtime.
+    const headerKey = req.headers.get('x-agent-key') ?? ''
     const authHeader = req.headers.get('authorization') ?? ''
-    const token = authHeader.replace(/^Bearer\s+/i, '')
+    const bearerToken = authHeader.replace(/^Bearer\s+/i, '')
+    const token = headerKey || bearerToken
     if (!token) {
-      return jsonResponse({ error: 'Missing Authorization header' }, 401)
+      return jsonResponse({ error: 'Missing X-Agent-Key or Authorization header' }, 401)
     }
 
     const keyHash = await sha256Hex(token)
@@ -111,20 +116,24 @@ Deno.serve(async (req: Request) => {
           return jsonResponse({ error: 'Job not found' }, 404)
         }
 
-        // Insert results into indicator_results
-        const { error: insertErr } = await supabase
-          .from('indicator_results')
-          .insert({
-            indicator_id: job.indicator_id,
-            tenant_id: tenantId,
-            job_id: jobId,
-            data,
-            metadata,
-            fetched_at: new Date().toISOString(),
-          })
+        // Insert results into indicator_results — only when the job is tied
+        // to an indicator. Schema-sync jobs have indicator_id = null and only
+        // need the job status update below.
+        if (job.indicator_id) {
+          const { error: insertErr } = await supabase
+            .from('indicator_results')
+            .insert({
+              indicator_id: job.indicator_id,
+              tenant_id: tenantId,
+              job_id: jobId,
+              data,
+              metadata,
+              fetched_at: new Date().toISOString(),
+            })
 
-        if (insertErr) {
-          return jsonResponse({ error: insertErr.message }, 500)
+          if (insertErr) {
+            return jsonResponse({ error: insertErr.message }, 500)
+          }
         }
 
         // Mark job as completed

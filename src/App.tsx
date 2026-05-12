@@ -17,11 +17,19 @@ import IndicatorsPage from './pages/tenant/IndicatorsPage'
 import IndicatorBuilder from './pages/tenant/IndicatorBuilder'
 import AgentStatusPage from './pages/tenant/AgentStatusPage'
 import SettingsPage from './pages/tenant/SettingsPage'
+import PermissionProfilesPage from './pages/tenant/PermissionProfilesPage'
 
 function TenantRoutes({ slug, basePath }: { slug: string; basePath: string }) {
   return (
     <Routes>
-      <Route path="login" element={<TenantLogin slug={slug} />} />
+      <Route
+        path="login"
+        element={
+          <TenantProvider slug={slug}>
+            <TenantLogin slug={slug} />
+          </TenantProvider>
+        }
+      />
       <Route
         path="*"
         element={
@@ -58,7 +66,7 @@ function TenantRoutes({ slug, basePath }: { slug: string; basePath: string }) {
                   <Route
                     path="/indicators"
                     element={
-                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                      <ProtectedRoute requiredPermission="manage_indicators" loginPath={`${basePath}/login`}>
                         <IndicatorsPage />
                       </ProtectedRoute>
                     }
@@ -66,7 +74,7 @@ function TenantRoutes({ slug, basePath }: { slug: string; basePath: string }) {
                   <Route
                     path="/indicators/new"
                     element={
-                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                      <ProtectedRoute requiredPermission="manage_indicators" loginPath={`${basePath}/login`}>
                         <IndicatorBuilder />
                       </ProtectedRoute>
                     }
@@ -84,6 +92,14 @@ function TenantRoutes({ slug, basePath }: { slug: string; basePath: string }) {
                     element={
                       <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
                         <UsersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/permission-profiles"
+                    element={
+                      <ProtectedRoute requiredRole="tenant_admin" loginPath={`${basePath}/login`}>
+                        <PermissionProfilesPage />
                       </ProtectedRoute>
                     }
                   />
@@ -133,7 +149,22 @@ export default function App() {
   }
 
   if (tenant.kind === 'tenant') {
-    // Subdomain-based tenant (dev / custom domain)
+    // Path-based access (/t/<slug>/...) needs a Route wrapper so the inner
+    // routes match the remainder after the prefix; basePath is preserved so
+    // navigation (loginPath, sidebar links) builds full URLs.
+    const pathPrefix = window.location.pathname.match(/^\/t\/[^/]+/)?.[0]
+    if (pathPrefix) {
+      return (
+        <Routes>
+          <Route
+            path="/t/:slug/*"
+            element={<TenantRoutes slug={tenant.slug} basePath={pathPrefix} />}
+          />
+          <Route path="*" element={<Navigate to={`${pathPrefix}/login`} replace />} />
+        </Routes>
+      )
+    }
+    // Subdomain-based tenant (acme.localhost, acme.dominio.com)
     return <TenantRoutes slug={tenant.slug} basePath="" />
   }
 

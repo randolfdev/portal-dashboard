@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from './AuthContext'
 import { applyTheme, TenantTheme } from '../lib/theme'
 
 type TenantData = {
@@ -22,7 +21,6 @@ const TenantContext = createContext<TenantData>({
 })
 
 export function TenantProvider({ slug, children }: { slug: string; children: ReactNode }) {
-  const { user } = useAuth()
   const [data, setData] = useState<TenantData>({
     id: null,
     slug,
@@ -33,12 +31,9 @@ export function TenantProvider({ slug, children }: { slug: string; children: Rea
   })
 
   useEffect(() => {
-    if (!user) {
-      console.log('[tenant] no user yet, skipping fetch')
-      return
-    }
-    console.log('[tenant] fetching tenant for slug:', slug)
-
+    // Tenant branding (name, theme, logo) must be available pre-auth so the
+    // login page renders in the tenant's colors. RLS allows anon SELECT on
+    // tenants for this reason.
     supabase
       .from('tenants')
       .select('id, slug, name, theme, logo_url')
@@ -64,7 +59,7 @@ export function TenantProvider({ slug, children }: { slug: string; children: Rea
           setData((prev) => ({ ...prev, loading: false }))
         }
       })
-  }, [slug, user])
+  }, [slug])
 
   return <TenantContext.Provider value={data}>{children}</TenantContext.Provider>
 }

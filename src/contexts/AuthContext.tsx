@@ -6,6 +6,9 @@ type AuthState = {
   session: Session | null
   user: User | null
   role: string | null
+  /** When the user is a `member`, these come from their assigned permission_profile. */
+  canManageIndicators: boolean
+  canManageDashboards: boolean
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -14,6 +17,8 @@ const AuthContext = createContext<AuthState>({
   session: null,
   user: null,
   role: null,
+  canManageIndicators: false,
+  canManageDashboards: false,
   loading: true,
   signOut: async () => {},
 })
@@ -21,13 +26,15 @@ const AuthContext = createContext<AuthState>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [role, setRole] = useState<string | null>(null)
+  const [canManageIndicators, setCanManageIndicators] = useState(false)
+  const [canManageDashboards, setCanManageDashboards] = useState(false)
   const [loading, setLoading] = useState(true)
 
   function fetchRoleInBackground(userId: string) {
     console.log('[auth] fetching role for', userId)
     supabase
       .from('profiles')
-      .select('role')
+      .select('role, permission_profile:permission_profile_id ( can_manage_indicators, can_manage_dashboards )')
       .eq('id', userId)
       .single()
       .then(({ data, error }) => {
@@ -36,8 +43,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const metaRole = session?.user?.app_metadata?.role as string | undefined
           console.log('[auth] fallback to app_metadata role:', metaRole)
           setRole(metaRole ?? null)
+          setCanManageIndicators(false)
+          setCanManageDashboards(false)
         } else {
-          setRole(data?.role ?? null)
+          const r = data?.role ?? null
+          setRole(r)
+          // Admin roles always have full management permissions
+          if (r === 'tenant_admin' || r === 'platform_admin') {
+            setCanManageIndicators(true)
+            setCanManageDashboards(true)
+          } else {
+            const pp = (data as { permission_profile?: { can_manage_indicators?: boolean; can_manage_dashboards?: boolean } | null })?.permission_profile
+            setCanManageIndicators(pp?.can_manage_indicators ?? false)
+            setCanManageDashboards(pp?.can_manage_dashboards ?? false)
+          }
         }
       })
   }
@@ -57,6 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchRoleInBackground(newSession.user.id)
       } else {
         setRole(null)
+        setCanManageIndicators(false)
+        setCanManageDashboards(false)
       }
     })
     return () => sub.subscription.unsubscribe()
@@ -70,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, role, loading, signOut }}
+      value={{ session, user: session?.user ?? null, role, canManageIndicators, canManageDashboards, loading, signOut }}
     >
       {children}
     </AuthContext.Provider>

@@ -18,6 +18,10 @@ function optionalEnv(key: string, fallback: string): string {
 export const config = {
   supabaseUrl: requireEnv('SUPABASE_URL'),
   agentApiKey: requireEnv('AGENT_API_KEY'),
+  // Anon key (public) — required to satisfy the Supabase edge runtime's
+  // mandatory Authorization-header JWT parse. The actual auth happens via
+  // X-Agent-Key (see auth.ts).
+  supabaseAnonKey: requireEnv('SUPABASE_ANON_KEY'),
   pollIntervalMs: parseInt(optionalEnv('POLL_INTERVAL_MS', '5000'), 10),
   encryptionKey: requireEnv('ENCRYPTION_KEY'),
 

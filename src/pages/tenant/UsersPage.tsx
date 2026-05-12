@@ -12,7 +12,13 @@ type Profile = {
   full_name: string | null
   email: string | null
   role: string
+  permission_profile_id: string | null
   created_at: string
+}
+
+type PermissionProfileOption = {
+  id: string
+  name: string
 }
 
 const roleBadge: Record<string, { label: string; variant: 'primary' | 'success' | 'neutral' }> = {
@@ -24,30 +30,58 @@ const roleBadge: Record<string, { label: string; variant: 'primary' | 'success' 
 export default function UsersPage() {
   const tenant = useTenantData()
   const [users, setUsers] = useState<Profile[]>([])
+  const [permissionProfiles, setPermissionProfiles] = useState<PermissionProfileOption[]>([])
   const [loading, setLoading] = useState(true)
   const [editUser, setEditUser] = useState<Profile | null>(null)
   const [newRole, setNewRole] = useState('')
+  const [newPermissionProfileId, setNewPermissionProfileId] = useState<string>('')
 
   useEffect(() => {
     if (!tenant.id) return
-    supabase
-      .from('profiles')
-      .select('id, full_name, email, role, created_at')
-      .eq('tenant_id', tenant.id)
-      .order('created_at')
-      .then(({ data }) => {
-        setUsers(data ?? [])
-        setLoading(false)
-      })
+    Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, full_name, email, role, permission_profile_id, created_at')
+        .eq('tenant_id', tenant.id)
+        .order('created_at'),
+      supabase
+        .from('permission_profiles')
+        .select('id, name')
+        .eq('tenant_id', tenant.id)
+        .order('name'),
+    ]).then(([usersRes, ppRes]) => {
+      setUsers(usersRes.data ?? [])
+      setPermissionProfiles(ppRes.data ?? [])
+      setLoading(false)
+    })
   }, [tenant.id])
 
   async function updateRole() {
     if (!editUser || !newRole) return
-    await supabase.from('profiles').update({ role: newRole }).eq('id', editUser.id)
+    await supabase
+      .from('profiles')
+      .update({
+        role: newRole,
+        permission_profile_id: newRole === 'member' ? (newPermissionProfileId || null) : null,
+      })
+      .eq('id', editUser.id)
     setUsers((prev) =>
-      prev.map((u) => (u.id === editUser.id ? { ...u, role: newRole } : u)),
+      prev.map((u) =>
+        u.id === editUser.id
+          ? {
+              ...u,
+              role: newRole,
+              permission_profile_id: newRole === 'member' ? (newPermissionProfileId || null) : null,
+            }
+          : u,
+      ),
     )
     setEditUser(null)
+  }
+
+  function permissionProfileName(id: string | null): string {
+    if (!id) return '—'
+    return permissionProfiles.find((p) => p.id === id)?.name ?? '—'
   }
 
   if (loading) return <LoadingSpinner />
@@ -74,7 +108,8 @@ export default function UsersPage() {
               <tr>
                 <th className="px-4 py-3 font-medium text-slate-500">Nome</th>
                 <th className="px-4 py-3 font-medium text-slate-500">Email</th>
-                <th className="px-4 py-3 font-medium text-slate-500">Perfil</th>
+                <th className="px-4 py-3 font-medium text-slate-500">Papel</th>
+                <th className="px-4 py-3 font-medium text-slate-500">Perfil de Acesso</th>
                 <th className="px-4 py-3 font-medium text-slate-500">Desde</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -89,6 +124,9 @@ export default function UsersPage() {
                     <td className="px-4 py-3">
                       <Badge variant={badge.variant}>{badge.label}</Badge>
                     </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {u.role === 'member' ? permissionProfileName(u.permission_profile_id) : '—'}
+                    </td>
                     <td className="px-4 py-3 text-slate-500">
                       {new Date(u.created_at).toLocaleDateString('pt-BR')}
                     </td>
@@ -99,6 +137,7 @@ export default function UsersPage() {
                         onClick={() => {
                           setEditUser(u)
                           setNewRole(u.role)
+                          setNewPermissionProfileId(u.permission_profile_id ?? '')
                         }}
                       >
                         Editar
@@ -121,14 +160,37 @@ export default function UsersPage() {
           <p className="text-sm text-slate-600">
             {editUser?.full_name || editUser?.email}
           </p>
-          <select
-            value={newRole}
-            onChange={(e) => setNewRole(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="member">Membro</option>
-            <option value="tenant_admin">Admin</option>
-          </select>
+          <div>
+            <label className="text-xs text-slate-500">Papel</label>
+            <select
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="member">Membro</option>
+              <option value="tenant_admin">Admin</option>
+            </select>
+          </div>
+          {newRole === 'member' && (
+            <div>
+              <label className="text-xs text-slate-500">Perfil de acesso</label>
+              <select
+                value={newPermissionProfileId}
+                onChange={(e) => setNewPermissionProfileId(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">— sem perfil (nenhum dashboard) —</option>
+                {permissionProfiles.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              {permissionProfiles.length === 0 && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Crie perfis em "Perfis de Acesso" para liberar dashboards a este usuário.
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex gap-2 justify-end">
             <Button variant="outline" size="sm" onClick={() => setEditUser(null)}>
               Cancelar

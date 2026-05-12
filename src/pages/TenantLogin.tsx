@@ -1,7 +1,10 @@
 import { useState, FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { useTenantData } from '../contexts/TenantContext'
 
 export default function TenantLogin({ slug }: { slug: string }) {
+  const tenant = useTenantData()
+  const displayName = tenant.name && tenant.name !== slug ? tenant.name : slug
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +45,7 @@ export default function TenantLogin({ slug }: { slug: string }) {
       >
         <div>
           <p className="text-xs uppercase tracking-wider text-slate-400">Portal</p>
-          <h1 className="text-2xl font-bold text-slate-800">{slug}</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{displayName}</h1>
         </div>
         <div className="space-y-1">
           <label className="text-sm text-slate-700">Email</label>

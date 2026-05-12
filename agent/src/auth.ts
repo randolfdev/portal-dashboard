@@ -21,7 +21,8 @@ export async function authenticate(): Promise<string> {
   const res = await fetch(`${config.gatewayUrl}?action=heartbeat`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${config.agentApiKey}`,
+      Authorization: `Bearer ${config.supabaseAnonKey}`,
+      'X-Agent-Key': config.agentApiKey,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ timestamp: new Date().toISOString() }),
@@ -67,7 +68,8 @@ export async function gatewayRequest<T = unknown>(
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${config.agentApiKey}`,
+      Authorization: `Bearer ${config.supabaseAnonKey}`,
+      'X-Agent-Key': config.agentApiKey,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),

@@ -30,6 +30,60 @@ export async function executeJob(job: Job): Promise<void> {
 
   const driver = getDriver(job.db_type);
 
+  // Decrypt connector password (with fallbacks) — needed by both branches.
+  const resolvePassword = (): string => {
+    try {
+      return decryptPassword(job.connector_config.password);
+    } catch {
+      logger.warn('Password decryption failed, using fallback', { jobId: job.id });
+      return process.env.ORACLE_PASSWORD || job.connector_config.password;
+    }
+  };
+
+  // Schema-sync jobs (triggered by SchemaBrowser): no SQL to run; introspect
+  // the database via driver.getSchema() and push to the gateway's schema_cache.
+  if ((job.query_ast as { type?: string } | undefined)?.type === 'sync_schema') {
+    try {
+      await driver.connect({ ...job.connector_config, password: resolvePassword() });
+      const schemas = await driver.getSchema();
+      const syncResp = await gatewayRequest('sync-schema', {
+        connectorId: job.connector_id,
+        schemas,
+      });
+      if (!syncResp.ok) {
+        throw new Error(`sync-schema rejected (HTTP ${syncResp.status})`);
+      }
+      logger.info('Schema sync completed', { jobId: job.id, tableCount: schemas.length });
+      await postResult({
+        job_id: job.id,
+        status: 'completed',
+        columns: [],
+        rows: [],
+        row_count: schemas.length,
+        started_at: startedAt,
+        finished_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      logger.error('Schema sync job failed', { jobId: job.id, error: errorMessage });
+      await postResult({
+        job_id: job.id,
+        status: 'failed',
+        error: errorMessage,
+        started_at: startedAt,
+        finished_at: new Date().toISOString(),
+      });
+    } finally {
+      await driver.disconnect().catch((e) => {
+        logger.warn('Error disconnecting after schema sync', {
+          jobId: job.id,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      });
+    }
+    return;
+  }
+
   try {
     // Compile the query AST to SQL
     const compiler = getCompiler(job.db_type);
@@ -37,19 +91,9 @@ export async function executeJob(job: Job): Promise<void> {
 
     logger.debug('Compiled SQL', { jobId: job.id, sql, paramCount: params.length });
 
-    // Decrypt the connector password (fall back to env override or plaintext)
-    let password: string;
-    try {
-      password = decryptPassword(job.connector_config.password);
-    } catch {
-      // If decryption fails, use ORACLE_PASSWORD env var or the raw value
-      password = process.env.ORACLE_PASSWORD || job.connector_config.password;
-      logger.warn('Password decryption failed, using fallback', { jobId: job.id });
-    }
-
     const cfg: ConnectorConfig = {
       ...job.connector_config,
-      password,
+      password: resolvePassword(),
     };
 
     // Connect, execute, disconnect

@@ -12,20 +12,37 @@ function useBasePath() {
   return match ? match[0] : ''
 }
 
-const navSuffix = [
+type NavItem = {
+  suffix: string
+  label: string
+  icon: () => JSX.Element
+  roles: string[]
+  /** If set, members are also allowed when their permission_profile grants it. */
+  permission?: 'manage_indicators' | 'manage_dashboards'
+}
+
+const navSuffix: NavItem[] = [
   { suffix: '', label: 'Dashboards', icon: GridIcon, roles: ['member', 'tenant_admin', 'platform_admin'] },
   { suffix: '/connectors', label: 'Conectores', icon: DatabaseIcon, roles: ['tenant_admin', 'platform_admin'] },
-  { suffix: '/indicators', label: 'Indicadores', icon: ChartIcon, roles: ['tenant_admin', 'platform_admin'] },
+  { suffix: '/indicators', label: 'Indicadores', icon: ChartIcon, roles: ['tenant_admin', 'platform_admin'], permission: 'manage_indicators' },
   { suffix: '/agent-status', label: 'Agent', icon: ServerIcon, roles: ['tenant_admin', 'platform_admin'] },
   { suffix: '/users', label: 'Usuarios', icon: UsersIcon, roles: ['tenant_admin', 'platform_admin'] },
+  { suffix: '/permission-profiles', label: 'Perfis de Acesso', icon: ShieldIcon, roles: ['tenant_admin', 'platform_admin'] },
   { suffix: '/settings', label: 'Configuracoes', icon: GearIcon, roles: ['tenant_admin', 'platform_admin'] },
 ]
 
 export default function Sidebar({ open, onClose }: Props) {
-  const { role, user, signOut } = useAuth()
+  const { role, canManageIndicators, canManageDashboards, user, signOut } = useAuth()
   const tenant = useTenantData()
   const basePath = useBasePath()
   const navItems = navSuffix.map((item) => ({ ...item, to: basePath + item.suffix || '/' }))
+
+  function isVisible(item: NavItem): boolean {
+    if (role && item.roles.includes(role)) return true
+    if (item.permission === 'manage_indicators' && canManageIndicators) return true
+    if (item.permission === 'manage_dashboards' && canManageDashboards) return true
+    return false
+  }
 
   return (
     <>
@@ -66,7 +83,7 @@ export default function Sidebar({ open, onClose }: Props) {
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           <p className="px-3 mb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Menu</p>
           {navItems
-            .filter((item) => role && item.roles.includes(role))
+            .filter(isVisible)
             .map((item) => (
               <NavLink
                 key={item.to}
@@ -149,6 +166,14 @@ function UsersIcon() {
   return (
     <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  )
+}
+
+function ShieldIcon() {
+  return (
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
     </svg>
   )
 }

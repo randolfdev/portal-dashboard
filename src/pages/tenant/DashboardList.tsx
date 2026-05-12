@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useTenantData } from '../../contexts/TenantContext'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTenantBasePath } from '../../lib/use-tenant-base-path'
 import { defaultTemplate } from '../../lib/dashboard-templates'
 import Button from '../../components/ui/Button'
 import EmptyState from '../../components/ui/EmptyState'
@@ -19,10 +20,11 @@ type Dashboard = {
 
 export default function DashboardList() {
   const tenant = useTenantData()
-  const { role } = useAuth()
+  const { role, canManageDashboards } = useAuth()
+  const basePath = useTenantBasePath()
   const [dashboards, setDashboards] = useState<Dashboard[]>([])
   const [loading, setLoading] = useState(true)
-  const isAdmin = role === 'tenant_admin' || role === 'platform_admin'
+  const canCreate = role === 'tenant_admin' || role === 'platform_admin' || canManageDashboards
 
   useEffect(() => {
     if (!tenant.id) return
@@ -78,7 +80,7 @@ export default function DashboardList() {
         title="Nenhum dashboard ainda"
         description="Crie seu primeiro dashboard a partir de um template."
         action={
-          isAdmin ? (
+          canCreate ? (
             <Button onClick={createFromTemplate}>Criar dashboard de exemplo</Button>
           ) : undefined
         }
@@ -93,7 +95,7 @@ export default function DashboardList() {
           <h2 className="text-xl font-bold text-slate-800">Dashboards</h2>
           <p className="text-sm text-slate-400 mt-0.5">{dashboards.length} dashboard{dashboards.length !== 1 ? 's' : ''}</p>
         </div>
-        {isAdmin && (
+        {canCreate && (
           <Button size="sm" onClick={createFromTemplate}>
             + Novo
           </Button>
@@ -103,7 +105,7 @@ export default function DashboardList() {
         {dashboards.map((d) => (
           <Link
             key={d.id}
-            to={`/dashboards/${d.slug}`}
+            to={`${basePath}/dashboards/${d.slug}`}
             className="group bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:shadow-md hover:border-primary/20 transition-all duration-200"
           >
             <div className="flex items-start justify-between">

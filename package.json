@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:public": "node scripts/dev-public.mjs",
+    "tunnel:setup": "bash scripts/setup-funnel.sh",
+    "tunnel:url": "tailscale funnel status",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useTenantData } from '../../contexts/TenantContext'
+import { useTenantBasePath } from '../../lib/use-tenant-base-path'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import EmptyState from '../../components/ui/EmptyState'
@@ -27,6 +28,7 @@ const scheduleLabels: Record<string, string> = {
 
 export default function IndicatorsPage() {
   const tenant = useTenantData()
+  const basePath = useTenantBasePath()
   const [indicators, setIndicators] = useState<Indicator[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -69,7 +71,7 @@ export default function IndicatorsPage() {
         title="Nenhum indicador"
         description="Crie indicadores para alimentar seus dashboards com dados reais."
         action={
-          <Link to="/indicators/new"><Button>Criar indicador</Button></Link>
+          <Link to={`${basePath}/indicators/new`}><Button>Criar indicador</Button></Link>
         }
       />
     )
@@ -79,7 +81,7 @@ export default function IndicatorsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-800">Indicadores</h2>
-        <Link to="/indicators/new"><Button size="sm">+ Novo indicador</Button></Link>
+        <Link to={`${basePath}/indicators/new`}><Button size="sm">+ Novo indicador</Button></Link>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">

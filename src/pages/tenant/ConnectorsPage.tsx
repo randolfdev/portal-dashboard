@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useTenantData } from '../../contexts/TenantContext'
+import { useTenantBasePath } from '../../lib/use-tenant-base-path'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import EmptyState from '../../components/ui/EmptyState'
@@ -35,6 +36,7 @@ const dbColors: Record<string, 'primary' | 'success' | 'secondary' | 'warning'> 
 
 export default function ConnectorsPage() {
   const tenant = useTenantData()
+  const basePath = useTenantBasePath()
   const [connectors, setConnectors] = useState<Connector[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -77,7 +79,7 @@ export default function ConnectorsPage() {
         title="Nenhum conector configurado"
         description="Conecte o banco de dados do seu ERP para alimentar os dashboards."
         action={
-          <Link to="/connectors/new">
+          <Link to={`${basePath}/connectors/new`}>
             <Button>Novo conector</Button>
           </Link>
         }
@@ -89,7 +91,7 @@ export default function ConnectorsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-800">Conectores</h2>
-        <Link to="/connectors/new">
+        <Link to={`${basePath}/connectors/new`}>
           <Button size="sm">+ Novo conector</Button>
         </Link>
       </div>
@@ -117,7 +119,7 @@ export default function ConnectorsPage() {
               <p>Usuário: {c.username}</p>
             </div>
             <div className="flex gap-2 pt-2 border-t border-slate-100">
-              <Link to={`/connectors/${c.id}/edit`}>
+              <Link to={`${basePath}/connectors/${c.id}/edit`}>
                 <Button variant="ghost" size="sm">Editar</Button>
               </Link>
               <Button

@@ -41,3 +41,6 @@ supabase/.temp
 _*.txt
 
 .vercel
+
+# supabase studio scratch
+supabase/snippets/
